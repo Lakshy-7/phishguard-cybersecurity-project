@@ -306,4 +306,14 @@ phishing_platform/
 
 ---
 
+## 👨‍💻 Project Information
+
+**Project Title:** PhishGuard – AI-Powered Phishing Detection & Awareness Platform
+
+**Submitted By:** Lakshya Choudhary
+
+**Course:** B.Tech CSE (Cyber Security)
+
+**Academic Project:** Cyber Security
+
 *Built with Python, Flask, and scikit-learn. For educational use only.*
