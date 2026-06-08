@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <!-- Header -->
+  <div class="d-flex align-items-center mb-4">
+    <div>
+      <h3 class="mb-0 fw-bold"><i class="bi bi-speedometer2 text-danger me-2"></i>Dashboard</h3>
+      <p class="text-muted small mb-0">Welcome back, <strong>{{ current_user.full_name or current_user.username }}</strong></p>
+    </div>
+    <div class="ms-auto">
+      <a href="{{ url_for('url.scanner') }}" class="btn btn-danger btn-sm me-2">
+        <i class="bi bi-plus-circle me-1"></i>Scan URL
+      </a>
+      <a href="{{ url_for('email.scanner') }}" class="btn btn-outline-danger btn-sm">
+        <i class="bi bi-envelope-plus me-1"></i>Scan Email
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 bg-dark-subtle h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-primary bg-opacity-20 rounded-3 p-3">
+            <i class="bi bi-link-45deg text-primary fs-4"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold">{{ stats.total_url_scans }}</div>
+            <div class="text-muted small">URL Scans</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 bg-dark-subtle h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-danger bg-opacity-20 rounded-3 p-3">
+            <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold text-danger">{{ stats.phishing_urls }}</div>
+            <div class="text-muted small">Phishing URLs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 bg-dark-subtle h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-warning bg-opacity-20 rounded-3 p-3">
+            <i class="bi bi-envelope-exclamation text-warning fs-4"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold">{{ stats.total_email_scans }}</div>
+            <div class="text-muted small">Email Scans</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-0 bg-dark-subtle h-100">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon bg-success bg-opacity-20 rounded-3 p-3">
+            <i class="bi bi-person-bounding-box text-success fs-4"></i>
+          </div>
+          <div>
+            <div class="fs-2 fw-bold">{{ stats.active_campaigns }}</div>
+            <div class="text-muted small">Active Campaigns</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Scan Widget -->
+  <div class="card border-0 shadow-sm mb-4" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%); border-left: 3px solid #dc3545 !important;">
+    <div class="card-body py-3">
+      <div class="row g-3 align-items-center">
+        <div class="col-auto">
+          <i class="bi bi-lightning-charge-fill text-danger fs-3"></i>
+        </div>
+        <div class="col">
+          <div class="fw-semibold mb-1">Quick Scan</div>
+          <form class="d-flex gap-2" method="GET" action="{{ url_for('url.scanner') }}" id="quickScanForm" onsubmit="return quickScan(event)">
+            <input type="text" id="quickUrl" class="form-control form-control-sm font-monospace"
+                   placeholder="https://suspicious-site.xyz/login" style="max-width:400px;">
+            <button type="submit" class="btn btn-danger btn-sm px-3">
+              <i class="bi bi-search me-1"></i>Scan URL
+            </button>
+            <a href="{{ url_for('bulk.scan') }}" class="btn btn-outline-warning btn-sm px-3">
+              <i class="bi bi-list-check me-1"></i>Bulk Scan
+            </a>
+            <a href="{{ url_for('domain.analyze') }}" class="btn btn-outline-info btn-sm px-3">
+              <i class="bi bi-globe2 me-1"></i>Domain
+            </a>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model accuracy row -->
+  {% if model_meta %}
+  <div class="row g-3 mb-4">
+    {% if model_meta.url_model %}
+    <div class="col-md-6">
+      <div class="card border-secondary h-100">
+        <div class="card-body">
+          <h6 class="card-title text-muted text-uppercase small fw-bold mb-3">
+            <i class="bi bi-robot me-1"></i>URL Detection Models
+            <span class="badge bg-secondary float-end fw-normal" style="font-size:0.65rem;">{{ model_meta.url_model.dataset_size or model_meta.url_model.training_samples }} samples</span>
+          </h6>
+          <!-- Random Forest -->
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">Random Forest — Accuracy</span>
+            <strong>{{ (model_meta.url_model.rf_accuracy * 100 if model_meta.url_model.rf_accuracy is defined else model_meta.url_model.accuracy * 100)|round(1) }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-success" style="width:{{ (model_meta.url_model.rf_accuracy * 100 if model_meta.url_model.rf_accuracy is defined else model_meta.url_model.accuracy * 100)|round(1) }}%"></div>
+          </div>
+          <!-- Gradient Boosting -->
+          {% if model_meta.url_model.gb_accuracy is defined %}
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">Gradient Boosting — Accuracy</span>
+            <strong>{{ (model_meta.url_model.gb_accuracy * 100)|round(1) }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-warning" style="width:{{ (model_meta.url_model.gb_accuracy * 100)|round(1) }}%"></div>
+          </div>
+          {% endif %}
+          <!-- Logistic Regression -->
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">Logistic Regression — Accuracy</span>
+            <strong>{{ (model_meta.url_model.lr_accuracy * 100)|round(1) }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-info" style="width:{{ (model_meta.url_model.lr_accuracy * 100)|round(1) }}%"></div>
+          </div>
+          <div class="mt-2 text-muted small">{{ model_meta.url_model.n_features }} features extracted per URL</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% if model_meta.email_model %}
+    <div class="col-md-6">
+      <div class="card border-secondary h-100">
+        <div class="card-body">
+          <h6 class="card-title text-muted text-uppercase small fw-bold mb-3">
+            <i class="bi bi-envelope-check me-1"></i>Email Detection Model (NLP)
+            <span class="badge bg-secondary float-end fw-normal" style="font-size:0.65rem;">{{ model_meta.email_model.dataset_size or model_meta.email_model.training_samples }} samples</span>
+          </h6>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">Accuracy</span>
+            <strong>{{ (model_meta.email_model.accuracy * 100)|round(1) }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-success" style="width:{{ (model_meta.email_model.accuracy * 100)|round(1) }}%"></div>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">F1 Score</span>
+            <strong>{{ (model_meta.email_model.f1_score * 100)|round(1) }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-info" style="width:{{ (model_meta.email_model.f1_score * 100)|round(1) }}%"></div>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <span class="small text-muted">CV F1 (5-fold)</span>
+            <strong>{{ (model_meta.email_model.cv_f1_mean * 100)|round(1) }}% ± {{ (model_meta.email_model.cv_f1_std * 100)|round(1) if model_meta.email_model.cv_f1_std is defined else '?' }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:5px">
+            <div class="progress-bar bg-warning" style="width:{{ (model_meta.email_model.cv_f1_mean * 100)|round(1) }}%"></div>
+          </div>
+          <div class="mt-2 text-muted small">{{ model_meta.email_model.model_type }}</div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Recent scans -->
+  <div class="row g-3">
+    <!-- Recent URL scans -->
+    <div class="col-lg-6">
+      <div class="card border-secondary">
+        <div class="card-header d-flex align-items-center justify-content-between py-2">
+          <span class="fw-semibold small"><i class="bi bi-link-45deg me-1"></i>Recent URL Scans</span>
+          <a href="{{ url_for('url.history') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_url_scans %}
+          <div class="table-responsive">
+            <table class="table table-dark table-hover table-sm mb-0">
+              <thead><tr>
+                <th>URL</th><th>Result</th><th>Risk</th><th>Time</th>
+              </tr></thead>
+              <tbody>
+                {% for scan in recent_url_scans %}
+                <tr>
+                  <td class="url-cell" title="{{ scan.url }}">{{ scan.url[:35] }}{% if scan.url|length > 35 %}…{% endif %}</td>
+                  <td>
+                    <span class="badge {% if scan.prediction == 'phishing' %}bg-danger{% else %}bg-success{% endif %}">
+                      {{ scan.prediction|title }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="progress" style="width:60px;height:8px" title="{{ scan.risk_score }}%">
+                      <div class="progress-bar {% if scan.risk_score > 70 %}bg-danger{% elif scan.risk_score > 40 %}bg-warning{% else %}bg-success{% endif %}"
+                           style="width:{{ scan.risk_score }}%"></div>
+                    </div>
+                  </td>
+                  <td class="text-muted small">{{ scan.scanned_at.strftime('%H:%M') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-inbox fs-2 d-block mb-2"></i>No URL scans yet.
+            <a href="{{ url_for('url.scanner') }}" class="btn btn-sm btn-danger mt-2">Scan a URL</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Email scans -->
+    <div class="col-lg-6">
+      <div class="card border-secondary">
+        <div class="card-header d-flex align-items-center justify-content-between py-2">
+          <span class="fw-semibold small"><i class="bi bi-envelope-exclamation me-1"></i>Recent Email Scans</span>
+          <a href="{{ url_for('email.history') }}" class="btn btn-outline-secondary btn-sm">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% if recent_email_scans %}
+          <div class="table-responsive">
+            <table class="table table-dark table-hover table-sm mb-0">
+              <thead><tr>
+                <th>Subject</th><th>Result</th><th>Risk</th><th>Time</th>
+              </tr></thead>
+              <tbody>
+                {% for scan in recent_email_scans %}
+                <tr>
+                  <td title="{{ scan.subject }}">{{ scan.subject[:35] }}{% if scan.subject|length > 35 %}…{% endif %}</td>
+                  <td>
+                    <span class="badge {% if scan.prediction == 'phishing' %}bg-danger{% else %}bg-success{% endif %}">
+                      {{ scan.prediction|title }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="progress" style="width:60px;height:8px" title="{{ scan.risk_score }}%">
+                      <div class="progress-bar {% if scan.risk_score > 70 %}bg-danger{% elif scan.risk_score > 40 %}bg-warning{% else %}bg-success{% endif %}"
+                           style="width:{{ scan.risk_score }}%"></div>
+                    </div>
+                  </td>
+                  <td class="text-muted small">{{ scan.scanned_at.strftime('%H:%M') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-envelope fs-2 d-block mb-2"></i>No email scans yet.
+            <a href="{{ url_for('email.scanner') }}" class="btn btn-sm btn-warning mt-2">Scan an Email</a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="col-12">
+      <div class="card border-secondary">
+        <div class="card-header py-2">
+          <span class="fw-semibold small"><i class="bi bi-journal-code me-1"></i>Recent Activity Log</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-sm table-hover mb-0">
+              <thead><tr><th>Action</th><th>Detail</th><th>IP</th><th>Level</th><th>Time</th></tr></thead>
+              <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                  <td><code class="text-info small">{{ log.action }}</code></td>
+                  <td class="text-muted small">{{ (log.detail or '')[:60] }}</td>
+                  <td class="text-muted small">{{ log.ip_address or '—' }}</td>
+                  <td>
+                    <span class="badge {% if log.level == 'ERROR' %}bg-danger{% elif log.level == 'WARNING' %}bg-warning text-dark{% else %}bg-secondary{% endif %} small">
+                      {{ log.level }}
+                    </span>
+                  </td>
+                  <td class="text-muted small">{{ log.timestamp.strftime('%m/%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickScan(e) {
+  e.preventDefault();
+  const url = document.getElementById('quickUrl').value.trim();
+  if (!url) { alert('Please enter a URL'); return false; }
+  window.location.href = "{{ url_for('url.scanner') }}";
+  // Pass via sessionStorage so URL scanner can pick it up
+  sessionStorage.setItem('quickScanUrl', url);
+  return false;
+}
+</script>
+{% endblock %}

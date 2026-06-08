@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Campaign: {{ campaign.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center mb-4">
+    <div>
+      <h3 class="mb-0 fw-bold"><i class="bi bi-person-bounding-box text-success me-2"></i>{{ campaign.name }}</h3>
+      <p class="text-muted small mb-0">{{ templates.get(campaign.template_type, {}).get('name', '') }} &nbsp;|&nbsp;
+        <span class="badge {% if campaign.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">{{ campaign.status|title }}</span>
+      </p>
+    </div>
+    <div class="ms-auto d-flex gap-2">
+      {% if campaign.status == 'active' %}
+      <form method="POST" action="{{ url_for('simulation.complete_campaign', campaign_id=campaign.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-check2-all me-1"></i>Mark Complete
+        </button>
+      </form>
+      {% endif %}
+      <a href="{{ url_for('simulation.index') }}" class="btn btn-outline-success btn-sm">← Back</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card border-secondary text-center p-3">
+        <div class="fs-2 fw-bold">{{ campaign.target_count }}</div>
+        <div class="text-muted small">Targets</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-secondary text-center p-3">
+        <div class="fs-2 fw-bold text-danger">{{ campaign.click_count }}</div>
+        <div class="text-muted small">Clicks</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-secondary text-center p-3">
+        <div class="fs-2 fw-bold text-success">{{ campaign.report_count }}</div>
+        <div class="text-muted small">Reported</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="card border-secondary text-center p-3">
+        <div class="fs-2 fw-bold text-warning">{{ campaign.click_rate }}%</div>
+        <div class="text-muted small">Click Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulation link -->
+  <div class="card border-success mb-4">
+    <div class="card-header py-2 fw-semibold text-success">
+      <i class="bi bi-link-45deg me-1"></i>Simulation Link
+    </div>
+    <div class="card-body">
+      <p class="small text-muted mb-2">Share this link with your awareness campaign targets.
+        When clicked, it will record the visit and immediately show the education page.</p>
+      <div class="input-group">
+        <input type="text" class="form-control font-monospace" id="sim-url" value="{{ sim_url }}" readonly>
+        <button class="btn btn-outline-success" onclick="copySimUrl()">
+          <i class="bi bi-clipboard me-1"></i>Copy
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Click log -->
+  <div class="card border-secondary">
+    <div class="card-header py-2 fw-semibold">
+      <i class="bi bi-mouse me-1"></i>Click Log ({{ clicks|length }} clicks)
+    </div>
+    <div class="card-body p-0">
+      {% if clicks %}
+      <div class="table-responsive">
+        <table class="table table-dark table-hover table-sm mb-0">
+          <thead><tr><th>#</th><th>IP Address</th><th>User Agent</th><th>Clicked At</th></tr></thead>
+          <tbody>
+            {% for click in clicks %}
+            <tr>
+              <td class="text-muted">{{ loop.index }}</td>
+              <td><code class="small">{{ click.ip_address or '—' }}</code></td>
+              <td class="small text-muted" title="{{ click.user_agent }}">
+                {{ (click.user_agent or '—')[:60] }}{% if click.user_agent and click.user_agent|length > 60 %}…{% endif %}
+              </td>
+              <td class="small text-muted">{{ click.clicked_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center text-muted py-4">
+        <i class="bi bi-mouse fs-2 d-block mb-2 opacity-25"></i>
+        No clicks recorded yet. Share the simulation link above.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copySimUrl() {
+  const el = document.getElementById('sim-url');
+  navigator.clipboard.writeText(el.value).then(() => {
+    const btn = el.nextElementSibling;
+    btn.innerHTML = '<i class="bi bi-check me-1"></i>Copied!';
+    btn.classList.replace('btn-outline-success', 'btn-success');
+    setTimeout(() => {
+      btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy';
+      btn.classList.replace('btn-success', 'btn-outline-success');
+    }, 2000);
+  });
+}
+</script>
+{% endblock %}

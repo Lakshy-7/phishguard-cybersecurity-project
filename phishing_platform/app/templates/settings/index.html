@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Settings — PhishGuard{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+
+  <div class="d-flex align-items-center mb-4">
+    <div class="feature-icon bg-secondary bg-opacity-15 rounded-3 p-3 me-3">
+      <i class="bi bi-gear-fill fs-3 text-secondary"></i>
+    </div>
+    <div>
+      <h2 class="fw-bold mb-0">Settings</h2>
+      <p class="text-muted mb-0">Manage your profile, password, and API access</p>
+    </div>
+  </div>
+
+  <!-- API Key Banner (shown once after creation) -->
+  {% for msg in get_flashed_messages(category_filter=['api_key']) %}
+  <div class="alert alert-warning border border-warning border-opacity-50 mb-4">
+    <div class="fw-semibold mb-1"><i class="bi bi-key-fill me-2"></i>Your new API key — copy it now, it won't be shown again!</div>
+    <code class="d-block p-2 rounded mt-2" style="background:#1a1a2e; font-size:0.85rem; word-break:break-all;">{{ msg.split('\n')[1] if '\n' in msg else msg }}</code>
+    <div class="form-text mt-2">Use this key in the <code>X-API-Key</code> header for REST API calls.</div>
+  </div>
+  {% endfor %}
+
+  <div class="row g-4">
+
+    <!-- Profile -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+          <h5 class="mb-0 fw-semibold"><i class="bi bi-person-circle me-2 text-primary"></i>Profile</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="update_profile">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Full Name</label>
+              <input type="text" name="full_name" class="form-control"
+                     value="{{ current_user.full_name or '' }}"
+                     placeholder="Your full name">
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Email</label>
+              <input type="email" name="email" class="form-control"
+                     value="{{ current_user.email }}" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Username</label>
+              <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
+              <div class="form-text">Username cannot be changed.</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Account Type</label>
+              <div>
+                {% if current_user.is_admin %}
+                <span class="badge bg-danger">Administrator</span>
+                {% else %}
+                <span class="badge bg-secondary">Standard User</span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Member Since</label>
+              <div class="text-muted small">{{ current_user.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-check2 me-1"></i>Save Profile
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+          <h5 class="mb-0 fw-semibold"><i class="bi bi-shield-lock me-2 text-warning"></i>Change Password</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="change_password">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Current Password</label>
+              <input type="password" name="current_password" class="form-control" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">New Password</label>
+              <input type="password" name="new_password" class="form-control"
+                     minlength="8" required placeholder="Min 8 characters">
+            </div>
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Confirm New Password</label>
+              <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-warning w-100">
+              <i class="bi bi-lock me-1"></i>Change Password
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Keys -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3 d-flex justify-content-between align-items-center">
+          <h5 class="mb-0 fw-semibold"><i class="bi bi-key me-2 text-success"></i>API Keys</h5>
+          <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#createKeyModal">
+            <i class="bi bi-plus-lg me-1"></i>New Key
+          </button>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Use API keys to call the PhishGuard REST API from scripts or integrations.
+            Pass the key in the <code>X-API-Key</code> header. Max 5 keys.
+          </p>
+
+          {% if api_keys %}
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th>Name</th>
+                  <th>Key Prefix</th>
+                  <th>Created</th>
+                  <th>Last Used</th>
+                  <th>Uses</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key in api_keys %}
+                <tr>
+                  <td class="fw-semibold">{{ key.name }}</td>
+                  <td><code>{{ key.key_prefix }}...</code></td>
+                  <td class="text-muted small">{{ key.created_at.strftime('%b %d, %Y') }}</td>
+                  <td class="text-muted small">
+                    {% if key.last_used %}{{ key.last_used.strftime('%b %d, %Y') }}{% else %}Never{% endif %}
+                  </td>
+                  <td><span class="badge bg-secondary">{{ key.use_count }}</span></td>
+                  <td>
+                    <form method="POST" action="{{ url_for('settings.delete_api_key', key_id=key.id) }}"
+                          onsubmit="return confirm('Revoke this API key? This cannot be undone.')">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash"></i> Revoke
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">
+            <i class="bi bi-key fs-2 opacity-25"></i>
+            <p class="mt-2 mb-0">No API keys yet. Create one to get started.</p>
+          </div>
+          {% endif %}
+
+          <!-- API Usage example -->
+          <div class="mt-4 p-3 rounded" style="background:#0d1117; border:1px solid #333;">
+            <div class="text-muted small fw-semibold mb-2"><i class="bi bi-code-slash me-1"></i>Example API Usage</div>
+            <pre class="mb-0" style="font-size:0.78rem; color:#8b949e;"><code># Scan a URL
+curl -X POST http://127.0.0.1:5000/api/scan/url \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pg_your_key_here" \
+  -d '{"url": "http://suspicious-site.xyz/login"}'
+
+# Bulk scan (up to 50 URLs)
+curl -X POST http://127.0.0.1:5000/bulk/api \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: pg_your_key_here" \
+  -d '{"urls": ["http://site1.com", "http://site2.xyz"], "model": "random_forest"}'</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Create Key Modal -->
+<div class="modal fade" id="createKeyModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0" style="background:#1a1a2e;">
+      <div class="modal-header border-bottom border-secondary border-opacity-25">
+        <h5 class="modal-title fw-semibold"><i class="bi bi-key-fill me-2 text-success"></i>Create API Key</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('settings.create_api_key') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Key Name</label>
+            <input type="text" name="key_name" class="form-control" maxlength="100"
+                   placeholder="e.g. My Script, CI Pipeline, Home Lab" required>
+            <div class="form-text">Give it a descriptive name to identify where it's used.</div>
+          </div>
+          <div class="alert alert-warning py-2 small">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            The full key is shown <strong>only once</strong> after creation. Copy and store it securely.
+          </div>
+        </div>
+        <div class="modal-footer border-top border-secondary border-opacity-25">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">
+            <i class="bi bi-plus-lg me-1"></i>Create Key
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

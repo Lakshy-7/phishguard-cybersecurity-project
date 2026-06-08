@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Domain Analyzer — PhishGuard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <div class="d-flex align-items-center mb-4">
+    <div class="feature-icon bg-info bg-opacity-10 rounded-3 p-3 me-3">
+      <i class="bi bi-globe2 fs-3 text-info"></i>
+    </div>
+    <div>
+      <h2 class="fw-bold mb-0">Domain Analyzer</h2>
+      <p class="text-muted mb-0">Deep heuristic analysis of any domain or URL for phishing signals</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Input -->
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+          <h5 class="mb-0 fw-semibold"><i class="bi bi-search me-2 text-info"></i>Enter Domain or URL</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <input type="text" name="domain" class="form-control font-monospace"
+                     value="{{ domain_input }}"
+                     placeholder="e.g. paypal-verify.xyz or http://suspicious.tk/login"
+                     autofocus>
+              <div class="form-text">Enter a bare domain, subdomain, or full URL</div>
+            </div>
+            <button type="submit" class="btn btn-info w-100 fw-semibold text-dark">
+              <i class="bi bi-radar me-2"></i>Analyze Domain
+            </button>
+          </form>
+
+          <!-- Sample domains -->
+          <div class="mt-3">
+            <div class="text-muted small fw-semibold mb-2">Try these examples:</div>
+            <div class="d-flex flex-wrap gap-2">
+              {% for sample in ['paypal-verify.xyz', 'http://amazon-secure-login.tk/verify', 'google.com', 'coinbase-wallet-verify.ml', 'github.com'] %}
+              <button class="btn btn-outline-secondary btn-sm"
+                      onclick="document.querySelector('[name=domain]').value='{{ sample }}'">
+                {{ sample[:25] }}{% if sample|length > 25 %}…{% endif %}
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="col-lg-8">
+      {% if result %}
+
+      <!-- Risk Score Header -->
+      <div class="card border-0 shadow-sm mb-4
+        {% if result.risk_level == 'critical' %}border-danger border-opacity-75{% elif result.risk_level == 'high' %}border-warning border-opacity-75{% elif result.risk_level == 'medium' %}border-info border-opacity-50{% endif %}
+        " style="border-left: 4px solid {% if result.risk_level == 'critical' %}#dc3545{% elif result.risk_level == 'high' %}#ffc107{% elif result.risk_level == 'medium' %}#0dcaf0{% else %}#198754{% endif %} !important;">
+        <div class="card-body d-flex align-items-center gap-4">
+          <div class="text-center" style="min-width:90px;">
+            <div class="display-5 fw-bold
+              {% if result.risk_level == 'critical' %}text-danger
+              {% elif result.risk_level == 'high' %}text-warning
+              {% elif result.risk_level == 'medium' %}text-info
+              {% else %}text-success{% endif %}">
+              {{ result.risk_score }}
+            </div>
+            <div class="text-muted small">Risk Score</div>
+          </div>
+          <div>
+            <div class="fs-5 fw-bold">
+              {% if result.risk_level == 'critical' %}
+                <span class="text-danger"><i class="bi bi-x-octagon-fill me-2"></i>CRITICAL RISK</span>
+              {% elif result.risk_level == 'high' %}
+                <span class="text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>HIGH RISK</span>
+              {% elif result.risk_level == 'medium' %}
+                <span class="text-info"><i class="bi bi-exclamation-circle-fill me-2"></i>MEDIUM RISK</span>
+              {% else %}
+                <span class="text-success"><i class="bi bi-check-circle-fill me-2"></i>LOW RISK</span>
+              {% endif %}
+            </div>
+            <div class="font-monospace text-muted">{{ result.hostname }}</div>
+            <div class="progress mt-2" style="height:6px; width:220px;">
+              <div class="progress-bar {% if result.risk_score >= 70 %}bg-danger{% elif result.risk_score >= 45 %}bg-warning{% elif result.risk_score >= 20 %}bg-info{% else %}bg-success{% endif %}"
+                   style="width:{{ result.risk_score }}%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- Domain Structure -->
+        <div class="col-md-5">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-2">
+              <h6 class="mb-0 fw-semibold"><i class="bi bi-diagram-3 me-2 text-primary"></i>Domain Structure</h6>
+            </div>
+            <div class="card-body">
+              <table class="table table-sm mb-0">
+                <tbody>
+                  <tr><td class="text-muted small">Full Domain</td><td class="font-monospace small">{{ result.hostname }}</td></tr>
+                  <tr><td class="text-muted small">SLD</td><td class="font-monospace small">{{ result.sld }}</td></tr>
+                  <tr><td class="text-muted small">TLD</td>
+                    <td>
+                      <span class="font-monospace small">{{ result.tld }}</span>
+                      <span class="badge ms-1
+                        {% if result.tld_category == 'high_risk' %}bg-danger
+                        {% elif result.tld_category == 'medium_risk' %}bg-warning text-dark
+                        {% else %}bg-success{% endif %}" style="font-size:0.65rem;">
+                        {{ result.tld_category.replace('_', ' ') }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr><td class="text-muted small">Subdomains</td><td>{{ result.subdomain_count }}</td></tr>
+                  <tr><td class="text-muted small">Hyphens</td><td>{{ result.hyphen_count }}</td></tr>
+                  <tr><td class="text-muted small">Domain Length</td><td>{{ result.domain_length }} chars</td></tr>
+                  <tr><td class="text-muted small">Entropy</td>
+                    <td>
+                      {{ result.entropy }}
+                      <span class="text-muted small">({% if result.entropy > 3.8 %}high{% elif result.entropy > 2.5 %}medium{% else %}low{% endif %})</span>
+                    </td>
+                  </tr>
+                  {% if result.keyword_hits %}
+                  <tr><td class="text-muted small">Keywords</td>
+                    <td><span class="badge bg-danger">{{ result.keyword_hits | join(', ') }}</span></td>
+                  </tr>
+                  {% endif %}
+                  {% if result.brand_hits %}
+                  <tr><td class="text-muted small">Brands</td>
+                    <td><span class="badge bg-warning text-dark">{{ result.brand_hits | join(', ') }}</span></td>
+                  </tr>
+                  {% endif %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flags + Good Signs -->
+        <div class="col-md-7">
+          {% if result.flags %}
+          <div class="card border-0 shadow-sm mb-3 border-danger border-opacity-25">
+            <div class="card-header bg-transparent border-bottom border-danger border-opacity-25 py-2">
+              <h6 class="mb-0 fw-semibold text-danger"><i class="bi bi-flag-fill me-2"></i>Risk Flags ({{ result.flags|length }})</h6>
+            </div>
+            <div class="card-body pb-2">
+              {% for flag in result.flags %}
+              <div class="d-flex align-items-start gap-2 mb-2">
+                <i class="bi bi-x-circle-fill text-danger mt-1 flex-shrink-0"></i>
+                <span class="small">{{ flag }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if result.good_signs %}
+          <div class="card border-0 shadow-sm border-success border-opacity-25">
+            <div class="card-header bg-transparent border-bottom border-success border-opacity-25 py-2">
+              <h6 class="mb-0 fw-semibold text-success"><i class="bi bi-check-circle me-2"></i>Positive Signals</h6>
+            </div>
+            <div class="card-body pb-2">
+              {% for sign in result.good_signs %}
+              <div class="d-flex align-items-start gap-2 mb-2">
+                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+                <span class="small">{{ sign }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      {% else %}
+      <div class="card border-0 shadow-sm" style="min-height:300px;">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center text-muted py-5">
+          <i class="bi bi-globe2" style="font-size:3rem; opacity:0.2;"></i>
+          <p class="mt-3 mb-0">Enter a domain or URL to analyze</p>
+          <p class="small mt-1">Get a breakdown of structural risk factors, TLD reputation, keyword analysis, and brand impersonation detection.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

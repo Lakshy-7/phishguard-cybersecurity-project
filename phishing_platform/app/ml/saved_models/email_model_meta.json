@@ -1,0 +1,13 @@
+{
+  "dataset_source": "Kaggle (Enron + Nazario + CEAS_08 + Ling + phishing_email)",
+  "dataset_size": 33868,
+  "model_type": "TF-IDF (trigram, 10k) + LogisticRegression",
+  "accuracy": 0.9849,
+  "precision": 0.9813,
+  "recall": 0.9883,
+  "f1_score": 0.9848,
+  "cv_f1_mean": 0.9848,
+  "cv_f1_std": 0.0,
+  "training_samples": 27094,
+  "test_samples": 6774
+}

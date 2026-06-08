@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PhishGuard Email Report</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: Arial, sans-serif; font-size:13px; color:#111; background:#fff; padding:30px; }
+  h1 { font-size:20px; margin-bottom:4px; }
+  h2 { font-size:15px; margin:16px 0 6px; }
+  .header { display:flex; justify-content:space-between; border-bottom:2px solid #333; padding-bottom:10px; margin-bottom:16px; }
+  .badge { display:inline-block; padding:3px 8px; border-radius:4px; font-size:11px; font-weight:bold; }
+  .ph { background:#dc3545; color:#fff; }
+  .lg { background:#198754; color:#fff; }
+  .sec { background:#6c757d; color:#fff; }
+  .verdict-box { padding:14px; border-radius:6px; margin:14px 0; border:2px solid; }
+  .verdict-ph { background:#fff5f5; border-color:#dc3545; }
+  .verdict-lg { background:#f0fff4; border-color:#198754; }
+  .risk-score { font-size:36px; font-weight:bold; margin-right:16px; }
+  .email-meta { border:1px solid #ddd; border-radius:6px; padding:12px; margin:12px 0; }
+  .email-meta td { padding:4px 8px; vertical-align:top; }
+  .email-meta .lbl { color:#666; font-weight:bold; width:70px; }
+  .body-box { background:#f5f5f5; padding:8px; border-radius:4px; font-family:monospace; font-size:11px; max-height:120px; overflow:hidden; white-space:pre-wrap; word-break:break-word; margin-top:4px; border:1px solid #ddd; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:16px 0; }
+  .card { border:1px solid #ddd; border-radius:6px; padding:12px; }
+  .risk-h { color:#dc3545; }
+  .safe-h { color:#198754; }
+  .factor { display:flex; gap:8px; margin-bottom:8px; font-size:12px; }
+  .advice { background:#f8f9fa; border-left:4px solid #333; padding:12px; border-radius:4px; margin:16px 0; }
+  .footer { margin-top:24px; border-top:1px solid #ddd; padding-top:10px; font-size:11px; color:#666; text-align:center; }
+  @media print { body { padding:10px; } }
+</style>
+</head>
+<body>
+{% set is_phishing = reason.verdict == 'PHISHING' %}
+<div class="header">
+  <div>
+    <h1>🛡️ PhishGuard — Email Scan Report</h1>
+    <div style="font-size:11px;color:#666;">Generated: {{ scan.scanned_at.strftime('%B %d, %Y at %H:%M UTC') if scan else 'Now' }} | Scanned by: {{ current_user.username }}</div>
+  </div>
+  <div style="text-align:right;">
+    <span class="badge {{ 'ph' if is_phishing else 'lg' }}">{{ reason.verdict }}</span><br>
+    <span style="font-size:11px;">Risk Score: <strong>{{ result.risk_score }}/100</strong></span>
+  </div>
+</div>
+
+<div class="verdict-box {{ 'verdict-ph' if is_phishing else 'verdict-lg' }}">
+  <div style="display:flex;align-items:center;">
+    <span class="risk-score" style="color:{{ '#dc3545' if is_phishing else '#198754' }}">{{ result.risk_score }}</span>
+    <div>
+      <strong style="font-size:16px;">{{ '🚨 PHISHING EMAIL DETECTED' if is_phishing else '✅ LEGITIMATE EMAIL' }}</strong><br>
+      <span style="font-size:12px;">{{ reason.summary }}</span><br>
+      <span class="badge {{ 'ph' if is_phishing else 'lg' }}">{{ reason.severity|upper }} RISK</span>
+      <span class="badge sec" style="margin-left:6px;">{{ reason.confidence_pct }}% confidence</span>
+    </div>
+  </div>
+</div>
+
+<h2>Email Details</h2>
+<div class="email-meta">
+  <table>
+    {% if scan.sender %}<tr><td class="lbl">From</td><td><code>{{ scan.sender }}</code></td></tr>{% endif %}
+    <tr><td class="lbl">Subject</td><td>{{ scan.subject or '(no subject)' }}</td></tr>
+    {% if scan.body %}
+    <tr><td class="lbl">Body</td><td><div class="body-box">{{ scan.body[:400] }}{% if scan.body|length > 400 %}…{% endif %}</div></td></tr>
+    {% endif %}
+  </table>
+</div>
+
+<div class="cols">
+  {% if reason.risk_factors %}
+  <div class="card">
+    <h2 class="risk-h">⚠ Risk Factors ({{ reason.risk_factors|length }})</h2>
+    {% for f in reason.risk_factors %}
+    <div class="factor"><span style="color:#dc3545;flex-shrink:0;">✗</span><span>{{ f }}</span></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if reason.safe_factors %}
+  <div class="card">
+    <h2 class="safe-h">✓ Positive Signals ({{ reason.safe_factors|length }})</h2>
+    {% for f in reason.safe_factors %}
+    <div class="factor"><span style="color:#198754;flex-shrink:0;">✓</span><span>{{ f }}</span></div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="advice">
+  <strong>Recommended Action:</strong><br>{{ reason.advice }}
+</div>
+
+<div class="footer">
+  PhishGuard Phishing Detection Platform · Email Risk Score: {{ result.risk_score }}/100
+  · Kaggle-trained NLP model (98.5% accuracy) · For security awareness use only
+</div>
+<script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>

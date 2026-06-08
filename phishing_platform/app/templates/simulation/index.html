@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Awareness Simulations{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center mb-4">
+    <div>
+      <h3 class="mb-0 fw-bold"><i class="bi bi-person-bounding-box text-success me-2"></i>Phishing Awareness Simulations</h3>
+      <p class="text-muted small mb-0">Educational simulation campaigns — no real credentials are ever collected.</p>
+    </div>
+    <a href="{{ url_for('simulation.create') }}" class="btn btn-success btn-sm ms-auto">
+      <i class="bi bi-plus-circle me-1"></i>New Campaign
+    </a>
+  </div>
+
+  <!-- Educational disclaimer -->
+  <div class="alert alert-info border-info mb-4">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <strong>Educational Purpose Only:</strong> These simulations are for cybersecurity awareness training.
+    All simulation pages immediately display educational content — no credentials are harvested,
+    no malware is generated, and no real phishing attacks are performed.
+  </div>
+
+  {% if campaigns %}
+  <div class="row g-3">
+    {% for camp in campaigns %}
+    <div class="col-md-6 col-xl-4">
+      <div class="card border-secondary h-100">
+        <div class="card-header d-flex align-items-center justify-content-between py-2">
+          <span class="fw-semibold">
+            <i class="bi bi-{{ templates[camp.template_type].icon if camp.template_type in templates else 'shield' }} me-2 text-success"></i>
+            {{ camp.name[:30] }}{% if camp.name|length > 30 %}…{% endif %}
+          </span>
+          <span class="badge {% if camp.status == 'active' %}bg-success{% elif camp.status == 'completed' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+            {{ camp.status|title }}
+          </span>
+        </div>
+        <div class="card-body">
+          {% if camp.description %}
+          <p class="small text-muted mb-3">{{ camp.description[:100] }}</p>
+          {% endif %}
+
+          <div class="row g-2 text-center mb-3">
+            <div class="col-4">
+              <div class="bg-dark-subtle rounded p-2">
+                <div class="fs-5 fw-bold">{{ camp.sent_count }}</div>
+                <div class="text-muted" style="font-size:.7rem">Sent</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="bg-dark-subtle rounded p-2">
+                <div class="fs-5 fw-bold text-danger">{{ camp.click_count }}</div>
+                <div class="text-muted" style="font-size:.7rem">Clicked</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="bg-dark-subtle rounded p-2">
+                <div class="fs-5 fw-bold text-success">{{ camp.report_count }}</div>
+                <div class="text-muted" style="font-size:.7rem">Reported</div>
+              </div>
+            </div>
+          </div>
+
+          {% if camp.sent_count > 0 %}
+          <div class="small mb-1 d-flex justify-content-between">
+            <span>Click rate</span><strong class="text-danger">{{ camp.click_rate }}%</strong>
+          </div>
+          <div class="progress mb-2" style="height:6px">
+            <div class="progress-bar bg-danger" style="width:{{ camp.click_rate }}%"></div>
+          </div>
+          {% endif %}
+
+          <div class="small text-muted">Template: {{ templates.get(camp.template_type, {}).get('name', camp.template_type) }}</div>
+        </div>
+        <div class="card-footer d-flex gap-2 py-2">
+          <a href="{{ url_for('simulation.detail', campaign_id=camp.id) }}" class="btn btn-outline-success btn-sm flex-grow-1">
+            <i class="bi bi-eye me-1"></i>Details
+          </a>
+          <form method="POST" action="{{ url_for('simulation.delete', campaign_id=camp.id) }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+                    onclick="return confirm('Delete this campaign?')">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-person-bounding-box display-3 mb-3 d-block opacity-25"></i>
+    <p>No simulation campaigns yet.</p>
+    <a href="{{ url_for('simulation.create') }}" class="btn btn-success mt-2">
+      <i class="bi bi-plus-circle me-1"></i>Create Your First Campaign
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

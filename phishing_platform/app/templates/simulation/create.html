@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Create Campaign{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:700px">
+  <div class="d-flex align-items-center mb-4">
+    <h3 class="mb-0 fw-bold"><i class="bi bi-plus-circle text-success me-2"></i>New Simulation Campaign</h3>
+    <a href="{{ url_for('simulation.index') }}" class="btn btn-outline-secondary btn-sm ms-auto">← Back</a>
+  </div>
+
+  <div class="card border-secondary">
+    <div class="card-body p-4">
+      <form method="POST">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Campaign Name <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" name="name" placeholder="Q4 Security Awareness Campaign" required>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Description</label>
+          <textarea class="form-control" name="description" rows="2"
+                    placeholder="Brief description of campaign goals…"></textarea>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Simulation Template</label>
+          <div class="row g-2">
+            {% for key, tmpl in templates.items() %}
+            <div class="col-6">
+              <div class="form-check card border-secondary p-3 cursor-pointer template-card" data-value="{{ key }}">
+                <input class="form-check-input" type="radio" name="template_type"
+                       id="tmpl_{{ key }}" value="{{ key }}" {% if key == 'generic' %}checked{% endif %}>
+                <label class="form-check-label w-100 cursor-pointer" for="tmpl_{{ key }}">
+                  <i class="bi bi-{{ tmpl.icon }} me-2 text-success"></i>
+                  <strong>{{ tmpl.name }}</strong>
+                </label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Target Count (for tracking)</label>
+          <input type="number" class="form-control" name="target_count" min="0" value="0"
+                 placeholder="Number of people you plan to send this to">
+        </div>
+
+        <div class="alert alert-warning small">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          <strong>Reminder:</strong> Only use this on users/employees who have given consent for security awareness training.
+          These simulations are for <strong>educational purposes only</strong>.
+        </div>
+
+        <button type="submit" class="btn btn-success w-100 fw-bold">
+          <i class="bi bi-rocket-takeoff me-2"></i>Create Campaign
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

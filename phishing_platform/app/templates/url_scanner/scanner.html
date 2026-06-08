@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+{% block title %}URL Scanner{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="d-flex align-items-center mb-4">
+    <h3 class="mb-0 fw-bold"><i class="bi bi-link-45deg text-primary me-2"></i>URL Phishing Scanner</h3>
+  </div>
+
+  <div class="row g-4">
+    <!-- Scanner form -->
+    <div class="col-lg-5">
+      <div class="card border-secondary">
+        <div class="card-header py-2 fw-semibold"><i class="bi bi-search me-2"></i>Scan a URL</div>
+        <div class="card-body">
+          <form method="POST" id="url-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">URL to Scan</label>
+              <input type="text" class="form-control font-monospace" name="url" id="url-input"
+                     placeholder="https://example.com or paste any URL…"
+                     value="{{ url }}" required autofocus>
+              <div class="form-text">Paste any URL to check if it's a phishing attempt.</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Detection Model</label>
+              <select class="form-select" name="model">
+                <option value="random_forest">Random Forest (recommended)</option>
+                <option value="gradient_boosting">Gradient Boosting</option>
+                <option value="logistic_regression">Logistic Regression</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 fw-bold" id="scan-btn">
+              <i class="bi bi-shield-check me-2"></i>Analyze URL
+            </button>
+          </form>
+
+          <!-- Quick test URLs -->
+          <div class="mt-3">
+            <p class="small text-muted mb-2">Quick test examples:</p>
+            <div class="d-flex flex-wrap gap-1">
+              <button class="btn btn-outline-success btn-sm sample-url"
+                data-url="https://www.google.com/search?q=flask">
+                <i class="bi bi-check-circle me-1"></i>Legit
+              </button>
+              <button class="btn btn-outline-danger btn-sm sample-url"
+                data-url="http://paypal-verify-account.ml/login">
+                <i class="bi bi-x-circle me-1"></i>Phishing
+              </button>
+              <button class="btn btn-outline-danger btn-sm sample-url"
+                data-url="http://192.168.1.1/admin/login.php">
+                <i class="bi bi-x-circle me-1"></i>IP URL
+              </button>
+              <button class="btn btn-outline-success btn-sm sample-url"
+                data-url="https://github.com/pallets/flask">
+                <i class="bi bi-check-circle me-1"></i>GitHub
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result panel -->
+    <div class="col-lg-7">
+      {% if result %}
+      {% set is_phishing = result.prediction == 'phishing' %}
+      {% set color = 'danger' if is_phishing else 'success' %}
+
+      <!-- Verdict Card -->
+      <div class="card border-{{ color }} border-opacity-75 shadow mb-3">
+        <div class="card-header bg-{{ color }} bg-opacity-15 d-flex align-items-center flex-wrap gap-2">
+          <i class="bi bi-{% if is_phishing %}x-octagon-fill text-danger{% else %}shield-check-fill text-success{% endif %} fs-4 me-2"></i>
+          <div class="flex-fill">
+            <div class="fw-bold fs-5">
+              {% if is_phishing %}🚨 PHISHING DETECTED{% else %}✅ LEGITIMATE URL{% endif %}
+            </div>
+            <div class="small text-muted font-monospace">{{ url[:65] }}{% if url|length > 65 %}…{% endif %}</div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{{ color }} fs-6">Risk: {{ result.risk_score }}/100</span>
+            {% if scan %}
+            <a href="{{ url_for('scan_report.url_report', scan_id=scan.id) }}"
+               class="btn btn-sm btn-outline-{{ color }}">
+              <i class="bi bi-file-earmark-text me-1"></i>Full Report
+            </a>
+            {% endif %}
+          </div>
+        </div>
+        <div class="card-body">
+
+          <!-- Confidence + risk bar -->
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Confidence</span>
+                <strong>{{ (result.confidence * 100)|round(1) }}%</strong>
+              </div>
+              <div class="progress" style="height:8px;">
+                <div class="progress-bar bg-{{ color }}" style="width:{{ (result.confidence * 100)|round(1) }}%"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="d-flex justify-content-between small mb-1">
+                <span class="text-muted">Risk Score</span>
+                <strong>{{ result.risk_score }}/100</strong>
+              </div>
+              <div class="progress" style="height:8px;">
+                <div class="progress-bar {% if result.risk_score > 65 %}bg-danger{% elif result.risk_score > 35 %}bg-warning{% else %}bg-success{% endif %}"
+                     style="width:{{ result.risk_score }}%"></div>
+              </div>
+            </div>
+          </div>
+
+          {% if reason %}
+          <!-- Summary sentence -->
+          <div class="alert alert-{{ color }} alert-sm py-2 mb-3">
+            <i class="bi bi-info-circle me-2"></i>{{ reason.summary }}
+          </div>
+
+          <!-- Risk factors + Safe factors side by side -->
+          <div class="row g-3 mb-3">
+            {% if reason.risk_factors %}
+            <div class="col-md-{{ '6' if reason.safe_factors else '12' }}">
+              <h6 class="text-danger fw-semibold small mb-2">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                WHY FLAGGED ({{ reason.risk_factors|length }} reason{{ 's' if reason.risk_factors|length != 1 }})
+              </h6>
+              {% for f in reason.risk_factors %}
+              <div class="d-flex gap-2 mb-2 small">
+                <i class="bi bi-x-circle-fill text-danger mt-1 flex-shrink-0"></i>
+                <span>{{ f }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% if reason.safe_factors %}
+            <div class="col-md-{{ '6' if reason.risk_factors else '12' }}">
+              <h6 class="text-success fw-semibold small mb-2">
+                <i class="bi bi-check-circle-fill me-1"></i>
+                POSITIVE SIGNALS ({{ reason.safe_factors|length }})
+              </h6>
+              {% for f in reason.safe_factors %}
+              <div class="d-flex gap-2 mb-2 small">
+                <i class="bi bi-check-circle-fill text-success mt-1 flex-shrink-0"></i>
+                <span>{{ f }}</span>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <!-- Advice -->
+          <div class="d-flex gap-2 p-3 rounded small
+            {% if is_phishing %}bg-danger bg-opacity-10{% else %}bg-success bg-opacity-10{% endif %}">
+            <i class="bi bi-shield-{% if is_phishing %}exclamation{% else %}check{% endif %}-fill text-{{ color }} flex-shrink-0 mt-1"></i>
+            <span>{{ reason.advice }}</span>
+          </div>
+          {% endif %}
+
+          <!-- Feature details (collapsible) -->
+          {% if result.features %}
+          <details class="mt-3">
+            <summary class="fw-semibold small text-muted" style="cursor:pointer;">
+              <i class="bi bi-bar-chart me-1"></i>Technical Feature Breakdown (expand)
+            </summary>
+            <div class="row mt-2 g-2 small">
+              {% for key, val in result.features.items() %}
+              <div class="col-6 col-md-4">
+                <div class="d-flex justify-content-between border-bottom border-secondary border-opacity-25 pb-1">
+                  <span class="text-muted">{{ key.replace('_', ' ').title() }}</span>
+                  <code>{{ val }}</code>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </details>
+          {% endif %}
+
+          <div class="mt-3 small text-muted">
+            <i class="bi bi-cpu me-1"></i>Model: <strong>{{ result.model_used.replace('_', ' ').title() }}</strong>
+            {% if result.get('kaggle_model') %}
+            <span class="badge bg-primary ms-2" style="font-size:0.65rem;">Kaggle-trained</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-secondary h-100 d-flex align-items-center justify-content-center">
+        <div class="text-center text-muted py-5">
+          <i class="bi bi-shield-shaded display-3 mb-3 d-block opacity-25"></i>
+          <p>Enter a URL and click <strong>Analyze</strong> to check it for phishing signals.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- History table -->
+    {% if history %}
+    <div class="col-12">
+      <div class="card border-secondary">
+        <div class="card-header py-2 fw-semibold d-flex align-items-center justify-content-between">
+          <span><i class="bi bi-clock-history me-1"></i>Recent Scans</span>
+          <a href="{{ url_for('url.history') }}" class="btn btn-outline-secondary btn-sm">Full History</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-dark table-hover table-sm mb-0">
+              <thead><tr><th>URL</th><th>Prediction</th><th>Confidence</th><th>Risk Score</th><th>Scanned</th></tr></thead>
+              <tbody>
+                {% for scan in history %}
+                <tr>
+                  <td class="font-monospace small" title="{{ scan.url }}">{{ scan.url[:55] }}{% if scan.url|length > 55 %}…{% endif %}</td>
+                  <td><span class="badge {% if scan.prediction == 'phishing' %}bg-danger{% else %}bg-success{% endif %}">{{ scan.prediction|title }}</span></td>
+                  <td>{{ (scan.confidence * 100)|round(1) }}%</td>
+                  <td>
+                    <div class="progress" style="width:80px;height:8px">
+                      <div class="progress-bar {% if scan.risk_score > 70 %}bg-danger{% elif scan.risk_score > 40 %}bg-warning{% else %}bg-success{% endif %}"
+                           style="width:{{ scan.risk_score }}%"></div>
+                    </div>
+                  </td>
+                  <td class="text-muted small">{{ scan.scanned_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Populate sample URL buttons
+  document.querySelectorAll('.sample-url').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('url-input').value = btn.dataset.url;
+    });
+  });
+
+  // Loading state on form submit
+  document.getElementById('url-form').addEventListener('submit', () => {
+    const btn = document.getElementById('scan-btn');
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing…';
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

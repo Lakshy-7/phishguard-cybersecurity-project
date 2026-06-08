@@ -1,0 +1,159 @@
+/* ============================================================
+   PhishGuard — Main Stylesheet
+   ============================================================ */
+
+/* ── Root theme overrides ────────────────────────────────── */
+:root {
+  --pg-red:      #dc3545;
+  --pg-dark:     #0d1117;
+  --pg-card-bg:  #161b22;
+  --pg-border:   #30363d;
+}
+
+/* ── Body ────────────────────────────────────────────────── */
+body {
+  background-color: var(--pg-dark);
+  color: #c9d1d9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main { flex: 1; }
+
+/* ── Login background ────────────────────────────────────── */
+.bg-login {
+  background: radial-gradient(ellipse at top, #1a1a2e 0%, #0d1117 70%);
+}
+
+/* ── Navbar ──────────────────────────────────────────────── */
+.navbar {
+  box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.navbar-brand {
+  font-size: 1.2rem;
+  letter-spacing: .03em;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background-color: var(--pg-card-bg);
+  border-color: var(--pg-border) !important;
+}
+.card-header {
+  background-color: rgba(255,255,255,.04);
+  border-color: var(--pg-border) !important;
+}
+.card-footer {
+  background-color: rgba(255,255,255,.02);
+  border-color: var(--pg-border) !important;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+.table-dark {
+  --bs-table-bg:         var(--pg-card-bg);
+  --bs-table-hover-bg:   rgba(255,255,255,.05);
+  --bs-table-border-color: var(--pg-border);
+}
+.table-dark th {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #8b949e;
+}
+.url-cell {
+  font-family: 'Courier New', monospace;
+  font-size: .82rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Stat icon containers ────────────────────────────────── */
+.stat-icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Badges ──────────────────────────────────────────────── */
+.badge { font-weight: 600; letter-spacing: .02em; }
+
+/* ── Progress bars ───────────────────────────────────────── */
+.progress {
+  background-color: #21262d;
+  border-radius: 99px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn { font-weight: 500; }
+.btn-danger  { background-color: #c0392b; border-color: #a93226; }
+.btn-danger:hover { background-color: #a93226; border-color: #922b21; }
+
+/* ── Code blocks ─────────────────────────────────────────── */
+code {
+  background-color: #21262d;
+  color: #79c0ff;
+  padding: .1em .35em;
+  border-radius: .3em;
+  font-size: .85em;
+}
+pre code { background: none; padding: 0; }
+
+/* ── Alerts (override Bootstrap dark theme) ──────────────── */
+.alert-info    { background-color: #031d2e; border-color: #1f4e79; color: #7dd3fc; }
+.alert-warning { background-color: #2d200a; border-color: #713f12; color: #fde68a; }
+.alert-danger  { background-color: #2d0a0a; border-color: #7f1d1d; color: #fca5a5; }
+.alert-success { background-color: #0a2d15; border-color: #14532d; color: #86efac; }
+
+/* ── List groups phishing themed ─────────────────────────── */
+.list-group-item-danger {
+  background-color: rgba(220,53,69,.15) !important;
+  color: #fca5a5 !important;
+  border-color: rgba(220,53,69,.25) !important;
+}
+
+/* ── Cursor ──────────────────────────────────────────────── */
+.cursor-pointer { cursor: pointer; }
+
+/* ── Monospace inputs ────────────────────────────────────── */
+.font-monospace { font-family: 'Courier New', Courier, monospace !important; }
+
+/* ── Dark-subtle utility ─────────────────────────────────── */
+.bg-dark-subtle { background-color: #161b22 !important; }
+
+/* ── Footer ──────────────────────────────────────────────── */
+footer {
+  font-size: .8rem;
+  margin-top: auto;
+}
+
+/* ── Template card hover ─────────────────────────────────── */
+.template-card {
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.template-card:hover {
+  border-color: #198754 !important;
+  background: rgba(25,135,84,.1);
+}
+.template-card:has(input:checked) {
+  border-color: #198754 !important;
+  background: rgba(25,135,84,.15);
+}
+
+/* ── Scrollbar (Webkit) ──────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+/* ── Responsive tweaks ───────────────────────────────────── */
+@media (max-width: 576px) {
+  .stat-icon { width: 40px; height: 40px; }
+}

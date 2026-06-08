@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Bulk URL Scanner — PhishGuard{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center mb-4">
+    <div class="feature-icon bg-warning bg-opacity-10 rounded-3 p-3 me-3">
+      <i class="bi bi-list-check fs-3 text-warning"></i>
+    </div>
+    <div>
+      <h2 class="fw-bold mb-0">Bulk URL Scanner</h2>
+      <p class="text-muted mb-0">Scan up to 50 URLs at once and export results as CSV</p>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Input Panel -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 py-3">
+          <h5 class="mb-0 fw-semibold"><i class="bi bi-input-cursor-text me-2 text-warning"></i>Enter URLs</h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" id="bulkForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold">URLs <span class="text-muted fw-normal">(one per line, max 50)</span></label>
+              <textarea name="urls" id="urlInput" class="form-control font-monospace"
+                        style="height:260px; font-size:0.82rem; background:#1a1a2e; color:#e0e0e0; border-color:#333;"
+                        placeholder="https://example.com&#10;http://suspicious-site.xyz/login&#10;https://google.com&#10;...">{% if submitted %}{{ request.form.get('urls','') }}{% endif %}</textarea>
+              <div class="form-text">Paste URLs from a spreadsheet, one per line.</div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold">Detection Model</label>
+              <select name="model" class="form-select" style="background:#1a1a2e;color:#e0e0e0;border-color:#333;">
+                <option value="random_forest" {% if model=='random_forest' %}selected{% endif %}>Random Forest (recommended)</option>
+                <option value="gradient_boosting" {% if model=='gradient_boosting' %}selected{% endif %}>Gradient Boosting</option>
+                <option value="logistic_regression" {% if model=='logistic_regression' %}selected{% endif %}>Logistic Regression (fast)</option>
+              </select>
+            </div>
+
+            <div class="d-flex gap-2 mb-3">
+              <button type="submit" class="btn btn-warning fw-semibold flex-fill">
+                <i class="bi bi-search me-2"></i>Scan All URLs
+              </button>
+              <button type="button" class="btn btn-outline-secondary" onclick="document.getElementById('urlInput').value=''">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+
+            <button type="button" class="btn btn-outline-secondary btn-sm w-100" onclick="loadSample()">
+              <i class="bi bi-lightning me-1"></i>Load Sample URLs
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="col-lg-7">
+      {% if error %}
+      <div class="alert alert-danger d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+      </div>
+      {% endif %}
+
+      {% if submitted and stats %}
+      <!-- Summary Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold">{{ stats.total }}</div>
+            <div class="text-muted small">Total Scanned</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm text-center py-3 border-danger border-opacity-50">
+            <div class="fs-2 fw-bold text-danger">{{ stats.phishing }}</div>
+            <div class="text-muted small">Phishing</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm text-center py-3 border-success border-opacity-50">
+            <div class="fs-2 fw-bold text-success">{{ stats.legitimate }}</div>
+            <div class="text-muted small">Legitimate</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-2 fw-bold {% if stats.avg_risk > 60 %}text-danger{% elif stats.avg_risk > 30 %}text-warning{% else %}text-success{% endif %}">
+              {{ stats.avg_risk }}
+            </div>
+            <div class="text-muted small">Avg Risk</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filter + Export Bar -->
+      <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+        <div class="btn-group btn-group-sm" role="group">
+          <button class="btn btn-outline-secondary active" onclick="filterResults('all', this)">All ({{ stats.total }})</button>
+          <button class="btn btn-outline-danger" onclick="filterResults('phishing', this)">Phishing ({{ stats.phishing }})</button>
+          <button class="btn btn-outline-success" onclick="filterResults('legitimate', this)">Legitimate ({{ stats.legitimate }})</button>
+        </div>
+        <form method="POST" action="{{ url_for('bulk.export_csv') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="results_json" value='{{ results | tojson }}'>
+          <button type="submit" class="btn btn-sm btn-outline-warning">
+            <i class="bi bi-download me-1"></i>Export CSV
+          </button>
+        </form>
+      </div>
+
+      <!-- Results Table -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive" style="max-height:420px; overflow-y:auto;">
+            <table class="table table-hover mb-0" id="resultsTable">
+              <thead class="table-dark sticky-top">
+                <tr>
+                  <th style="width:40%">URL</th>
+                  <th>Result</th>
+                  <th>Risk</th>
+                  <th>Indicators</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in results %}
+                <tr class="result-row" data-pred="{{ r.prediction }}">
+                  <td class="font-monospace" style="font-size:0.75rem; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ r.url }}">
+                    {{ r.url }}
+                  </td>
+                  <td>
+                    {% if r.prediction == 'phishing' %}
+                      <span class="badge bg-danger">🚨 Phishing</span>
+                    {% elif r.prediction == 'legitimate' %}
+                      <span class="badge bg-success">✅ Legit</span>
+                    {% else %}
+                      <span class="badge bg-secondary">⚠ Error</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.prediction != 'error' %}
+                    <div class="d-flex align-items-center gap-1">
+                      <div class="progress flex-fill" style="height:6px; width:60px;">
+                        <div class="progress-bar {% if r.risk_score > 60 %}bg-danger{% elif r.risk_score > 30 %}bg-warning{% else %}bg-success{% endif %}"
+                             style="width:{{ r.risk_score }}%"></div>
+                      </div>
+                      <small class="text-muted">{{ r.risk_score }}</small>
+                    </div>
+                    {% else %}
+                      <small class="text-danger">{{ r.error[:40] }}</small>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.indicators %}
+                      <span class="badge bg-warning text-dark" title="{{ r.indicators | join(', ') }}">
+                        {{ r.indicators | length }} flag{% if r.indicators|length != 1 %}s{% endif %}
+                      </span>
+                    {% else %}
+                      <span class="text-muted small">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      {% elif submitted %}
+      <div class="alert alert-info mt-2"><i class="bi bi-info-circle me-2"></i>No results to display.</div>
+      {% else %}
+      <div class="card border-0 shadow-sm" style="min-height:300px;">
+        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center text-muted py-5">
+          <i class="bi bi-list-check" style="font-size:3rem; opacity:0.3;"></i>
+          <p class="mt-3 mb-0">Enter URLs on the left and click <strong>Scan All URLs</strong></p>
+          <p class="small mt-1">Results will appear here with risk scores, predictions, and export options.</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function loadSample() {
+  document.getElementById('urlInput').value = [
+    'https://www.google.com',
+    'https://github.com/pallets/flask',
+    'http://paypal-verify-account.ml/login',
+    'http://amazon-security-alert.xyz/signin',
+    'https://stackoverflow.com/questions/tagged/python',
+    'http://192.168.1.1/admin/login.php',
+    'https://www.wikipedia.org/wiki/Phishing',
+    'http://free-iphone-winner.click/claim',
+    'https://docs.python.org/3/',
+    'http://microsoft-account-suspended.tk/verify'
+  ].join('\n');
+}
+
+function filterResults(pred, btn) {
+  document.querySelectorAll('.btn-group .btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.result-row').forEach(row => {
+    if (pred === 'all' || row.dataset.pred === pred) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+</script>
+{% endblock %}

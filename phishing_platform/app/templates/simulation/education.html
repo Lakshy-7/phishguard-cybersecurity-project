@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚠ Phishing Awareness — You Were Tested!</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body { background: #1a1a2e; color: #eee; }
+    .hero { background: linear-gradient(135deg, #c0392b, #8e1010); padding: 3rem 0; }
+    .tip-card { border-left: 4px solid #e74c3c; background: #2c2c3e; }
+    .safe-card { border-left: 4px solid #27ae60; background: #2c2c3e; }
+  </style>
+</head>
+<body>
+
+<!-- Hero Banner -->
+<div class="hero text-center text-white mb-0">
+  <div class="container py-4">
+    <i class="bi bi-exclamation-triangle-fill" style="font-size:4rem"></i>
+    <h1 class="display-5 fw-bold mt-3">You Clicked a Simulated Phishing Link!</h1>
+    <p class="lead mt-2 mb-0">
+      Don't worry — this was a <strong>security awareness test</strong>.<br>
+      No real harm was done. Let's learn how to spot phishing next time.
+    </p>
+  </div>
+</div>
+
+<div class="container py-5">
+
+  <!-- What happened -->
+  <div class="alert alert-warning mb-4">
+    <h5><i class="bi bi-shield-exclamation me-2"></i>What Just Happened?</h5>
+    <p class="mb-1">
+      You clicked a simulated phishing link as part of a <strong>cybersecurity awareness campaign</strong>.
+      {% if campaign %}
+      This was part of the campaign: <strong>{{ campaign.name }}</strong>.
+      {% endif %}
+    </p>
+    <p class="mb-0">
+      <strong>Important:</strong> This page immediately took you here — no credentials were collected,
+      no malware was installed, and no real phishing attack occurred.
+    </p>
+  </div>
+
+  <!-- Red flags section -->
+  <h4 class="fw-bold mb-3"><i class="bi bi-flag-fill text-danger me-2"></i>Common Phishing Red Flags</h4>
+  <div class="row g-3 mb-5">
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-globe me-2 text-danger"></i>Suspicious URLs</h6>
+        <p class="small mb-0">Always hover over links before clicking. Phishing URLs often contain misspellings
+        (e.g., <code>paypa1.com</code>), extra subdomains, or strange TLDs like <code>.tk</code>, <code>.xyz</code>.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-alarm me-2 text-danger"></i>Urgency & Fear Tactics</h6>
+        <p class="small mb-0">Phrases like "Act immediately!", "Your account will be closed in 24 hours", or
+        "Unusual activity detected" are designed to make you panic and click without thinking.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-key me-2 text-danger"></i>Credential Requests</h6>
+        <p class="small mb-0">Legitimate companies <strong>never</strong> ask for your password, SSN,
+        credit card number, or bank account details via email.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-envelope-x me-2 text-danger"></i>Sender Mismatch</h6>
+        <p class="small mb-0">Check the actual sender address — not just the display name.
+        <code>PayPal &lt;support@paypal-secure-verify.ml&gt;</code> is NOT from PayPal.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-gift me-2 text-danger"></i>Too-Good-To-Be-True Offers</h6>
+        <p class="small mb-0">You haven't won an iPhone 15, a cash prize, or a free vacation.
+        If it sounds too good to be true, it almost certainly is a scam.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="tip-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-file-earmark-x me-2 text-danger"></i>Unexpected Attachments</h6>
+        <p class="small mb-0">Never open unexpected attachments — especially <code>.exe</code>,
+        <code>.zip</code>, <code>.docm</code>, or <code>.pdf</code> files from unknown senders.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- What to do instead -->
+  <h4 class="fw-bold mb-3"><i class="bi bi-shield-check text-success me-2"></i>What To Do Instead</h4>
+  <div class="row g-3 mb-5">
+    <div class="col-md-6">
+      <div class="safe-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-1-circle text-success me-2"></i>Report It</h6>
+        <p class="small mb-0">Forward suspicious emails to your IT/security team.
+        Most email clients have a "Report Phishing" button.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="safe-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-2-circle text-success me-2"></i>Delete It</h6>
+        <p class="small mb-0">Do not reply, do not click links, do not open attachments.
+        Delete the email immediately.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="safe-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-3-circle text-success me-2"></i>Verify Independently</h6>
+        <p class="small mb-0">If an email claims to be from your bank or a service you use,
+        go directly to their official website (type the URL yourself) or call them.</p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="safe-card rounded p-3">
+        <h6 class="fw-bold"><i class="bi bi-4-circle text-success me-2"></i>Use MFA</h6>
+        <p class="small mb-0">Enable multi-factor authentication on all accounts.
+        Even if your password is compromised, MFA adds an extra layer of protection.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report button -->
+  {% if campaign %}
+  <div class="text-center">
+    <a href="{{ url_for('simulation.report_phish', token=campaign.token) }}"
+       class="btn btn-success btn-lg fw-bold px-5">
+      <i class="bi bi-hand-thumbs-up me-2"></i>I Understand — I Would Report This Email
+    </a>
+    <p class="text-muted small mt-2">Click above to record that you completed this awareness training.</p>
+  </div>
+  {% endif %}
+</div>
+
+<footer class="text-center text-muted py-4 border-top" style="border-color:#444 !important">
+  <i class="bi bi-shield-shaded text-danger me-1"></i>
+  <strong>PhishGuard</strong> — Cybersecurity Awareness Platform &nbsp;|&nbsp; Educational Use Only
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

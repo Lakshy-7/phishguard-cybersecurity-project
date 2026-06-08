@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}Email Scan Report — PhishGuard{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+  {% include 'scan_report/_email_report_body.html' with context %}
+</div>
+{% endblock %}
