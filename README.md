@@ -247,7 +247,7 @@ Useful resources related to this project:
 * Phishing URL Detection Guide: https://www.geeksforgeeks.org/machine-learning-phishing-website-detection-using-ml/
 
 
-Submitted By: Lakshya Choudhary
+Submitted By: Lakshy Choudhary
 
 Course: B.Tech CSE (Cyber Security)
 
