@@ -234,8 +234,18 @@ Nazario Phishing Emails	Kaggle	1,000
 CEAS-08 Spam Corpus	Kaggle	10,000
 Ling Spam Dataset	Kaggle	2,458
 Phishing Email Dataset	Kaggle	10,000
+
 👨‍💻 Project Information
-Project Title: PhishGuard – AI-Powered Phishing Detection & Awareness Platform
+Project Title: PhishGuard – AI-Powered Phishing Detection & Awareness Platform 
+
+## 📚 Learning Resources
+
+Useful resources related to this project:
+
+* Flask Documentation: https://flask.palletsprojects.com/
+* Scikit-Learn Documentation: https://scikit-learn.org/stable/
+* Phishing URL Detection Guide: https://www.geeksforgeeks.org/machine-learning-phishing-website-detection-using-ml/
+
 
 Submitted By: Lakshya Choudhary
 
